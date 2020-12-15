@@ -5,7 +5,7 @@ let svgWidth = 1000;
 let margin = {
     top: 20,
     right: 40,
-    bottom: 80,
+    bottom: 120,
     left: 100
 };
 
@@ -61,7 +61,7 @@ function updatetoolTip(chosenXAxis, circlesGroup) {
         label = "Median Income";
     }
     else if (chosenXAxis === "healthcare") {
-        label = "% with Healthcare";
+        label = "% without Healthcare";
     }
     else {label = "Median Age";   
     }
@@ -70,16 +70,16 @@ function updatetoolTip(chosenXAxis, circlesGroup) {
         .attr("class","d3-tip")
         .offset([80,-60])
         .html(function(d) {
-            return (`${d.state}<br>${label}:${d[chosenXAxis]}`);
+            return (`<strong>${d.state}</strong><br>${label}: ${d[chosenXAxis]}`);
         });
 
     circlesGroup.call(toolTip);
 
-    circlesGroup.on("mouseover", function(data) {
-        toolTip.show(data);
+    circlesGroup.on("mouseover", function(d) {
+        toolTip.show(d, this);
     })
-        .on("mouseout", function(data) {
-            toolTip.hide(data);
+        .on("mouseout", function(d) {
+            toolTip.hide(d);
         });
 
     return circlesGroup;
@@ -89,8 +89,6 @@ function updatetoolTip(chosenXAxis, circlesGroup) {
 //reading in the csv data
 d3.csv("./assets/data/data.csv").then(function(data, err) {
     if (err) throw err;
-    
-    console.log(data)
 
     //changing all required strings to int
     data.forEach(function(data) {
@@ -132,7 +130,7 @@ d3.csv("./assets/data/data.csv").then(function(data, err) {
     //**********************CHANGE LATER ************************
     //for now we'll hardcode in smokes as y axis
     //**********************CHANGE LATER ************************
-    let circlesGroup = chartGroup.selectAll("circle")
+    var circlesGroup = chartGroup.selectAll("circle")
         .data(data)
         .enter()
         .append("circle")
@@ -143,6 +141,93 @@ d3.csv("./assets/data/data.csv").then(function(data, err) {
 
     //create group for the three x-axis labels, center the text and push it below the x axis
     let labelsGroup = chartGroup.append("g")
-        .attr("transform", `translate(${width/2}, ${height + 20})`);
+        .attr("transform", `translate(${width/2}, ${height+20})`);
+
+    //create three x-axis labels for selecting your dataset (income, healthcare, age)
+    let incomeLabel = labelsGroup.append("text")
+        .attr("x", 0)
+        .attr("y", 20)
+        .attr("value", "income")
+        .classed("active", true)
+        .text("Median Income")
+
+        let healthcareLabel = labelsGroup.append("text")
+        .attr("x", 0)
+        .attr("y", 40)
+        .attr("value", "healthcare")
+        .classed("inactive", true)
+        .text("% Without Healthcare")
+        
+        let ageLabel = labelsGroup.append("text")
+        .attr("x", 0)
+        .attr("y", 60)
+        .attr("value", "age")
+        .classed("inactive", true)
+        .text("Median Age")  
+        
+    //append the y axis
+    chartGroup.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x", 0 - (height/2))
+        .attr("dy", "1em")
+        .classed("aText", true)
+        .text("% Who Smoke")
+
+    //calling the updateToolTip function
+    var circlesGroup = updatetoolTip(chosenXAxis, circlesGroup);
+
+    //creating an event listener for the xaxis
+    labelsGroup.selectAll("text")
+        .on("click", function() {
+            let selectionValue = d3.select(this).attr("value");
+            if (selectionValue !== chosenXAxis) {
+                chosenXAxis = selectionValue;
+
+                xLinearScale = xScale(data, chosenXAxis);
+
+                xAxis = renderAxes(xLinearScale, xAxis);
+
+                circlesGroup = renderCircles(circlesGroup, xLinearScale, chosenXAxis);
+
+                circlesGroup = updatetoolTip(chosenXAxis, circlesGroup);
+
+                if(chosenXAxis === "income") {
+                    incomeLabel
+                        .classed("active", true)
+                        .classed("inactive", false);
+                    healthcareLabel
+                        .classed("inactive", true)
+                        .classed("active", false);
+                    ageLabel
+                        .classed("inactive", true)
+                        .classed("active", false);
+                }
+                else if (chosenXAxis === "healthcare") {
+                    incomeLabel
+                        .classed("active", false)
+                        .classed("inactive", true);
+                    healthcareLabel
+                        .classed("inactive", false)
+                        .classed("active", true);
+                    ageLabel
+                        .classed("inactive", true)
+                        .classed("active", false);
+                }
+                else {
+                    incomeLabel
+                        .classed("active", false)
+                        .classed("inactive", true);
+                    healthcareLabel
+                        .classed("inactive", true)
+                        .classed("active", false);
+                    ageLabel
+                        .classed("inactive", false)
+                        .classed("active", true);
+                };
+            };
+        });  
+}).catch(function(error) {
+    console.log(error);
 });
 
