@@ -137,7 +137,8 @@ d3.csv("./assets/data/data.csv").then(function(data, err) {
         .attr("cx", d => xLinearScale(d[chosenXAxis]))
         .attr("cy", d => yLinearScale(d.smokes))
         .attr("r", 18)
-        .classed("inactive", true);
+        .classed("stateCircle", true)
+    
 
     //create group for the three x-axis labels, center the text and push it below the x axis
     let labelsGroup = chartGroup.append("g")
